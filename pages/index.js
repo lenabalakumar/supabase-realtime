@@ -1,8 +1,29 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import { useState } from "react";
+import CountriesCount from "../components/CountriesCount";
+import { supabaseClient } from "../config/supabaseClient";
+import styles from "../styles/Home.module.css";
 
-export default function Home() {
+export default function Home(props) {
+  const { countriesList } = props;
+  const [countriesListData, setCountriesListData] = useState(countriesList);
+
+  const handleDelete = async (indexToDelete) => {
+    const { error } = await supabaseClient
+      .from("countries")
+      .delete()
+      .eq("id", indexToDelete);
+    if (!error) {
+      console.log("Delete success");
+
+      const { data: countriesData, error: countriesDataFetchingError } =
+        await supabaseClient.from("countries").select("*");
+      if (!countriesDataFetchingError) {
+        setCountriesListData(countriesData);
+      }
+    }
+  };
   return (
     <div className={styles.container}>
       <Head>
@@ -12,58 +33,64 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div className={styles.tableContainer}>
+          <table>
+            <thead>
+              <tr>
+                <th>country_name</th>
+                <th>country_iso2</th>
+                <th>country_iso3</th>
+                <th>country_local_name</th>
+                <th>country_continent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {countriesListData.map((country, index) => {
+                return (
+                  <tr key={country.id}>
+                    <td>{country.name}</td>
+                    <td>{country.iso2}</td>
+                    <td>{country.iso3}</td>
+                    <td>{country.local_name}</td>
+                    <td>{country.continent}</td>
+                    <td>
+                      <button
+                        title="delete"
+                        onClick={() => handleDelete(country.id)}
+                      >
+                        delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot></tfoot>
+          </table>
         </div>
       </main>
 
       <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
+        <CountriesCount />
       </footer>
     </div>
-  )
+  );
+}
+
+export async function getStaticProps() {
+  console.log("inside get static props");
+  const { data: countriesList, error } = await supabaseClient
+    .from("countries")
+    .select("*", { count: "exact" });
+  console.log(countriesList);
+
+  if (error || countriesList.length < 1) {
+    console.log("Check data in supabase");
+    return;
+  }
+  return {
+    props: {
+      countriesList,
+    },
+  };
 }

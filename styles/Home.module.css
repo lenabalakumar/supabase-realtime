@@ -127,3 +127,10 @@
     filter: invert(1);
   }
 }
+
+.tableContainer {
+  height: 700px;
+  width: 1050px;
+  background-color: aquamarine;
+  overflow: auto;
+}
